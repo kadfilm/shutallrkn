@@ -13,13 +13,19 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
 import { XrayManager } from './xrayManager'
+import { ZapretManager } from './zapretManager'
+import { TgProxyManager } from './tgProxyManager'
 import { fetchSubscription, generateXrayConfig, ServerNode } from './subscriptionParser'
 
 let win: BrowserWindow | null
 let xrayManager: XrayManager
+let zapretManager: ZapretManager
+let tgProxyManager: TgProxyManager
 
 function createWindow() {
   xrayManager = new XrayManager(process.env.APP_ROOT)
+  zapretManager = new ZapretManager(process.env.APP_ROOT)
+  tgProxyManager = new TgProxyManager(process.env.APP_ROOT)
 
   win = new BrowserWindow({
     width: 900,
@@ -32,8 +38,8 @@ function createWindow() {
     },
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: '#1a1a1a',
-      symbolColor: '#ffffff'
+      color: '#0B1120',
+      symbolColor: '#F8FAFC'
     }
   })
 
@@ -70,12 +76,33 @@ function createWindow() {
     }
   })
 
+  // Zapret / Telegram IPC
+  ipcMain.handle('toggle-zapret', async (event, enable: boolean) => {
+    try {
+      if (enable) await zapretManager.startDiscordYoutube()
+      else await zapretManager.stop()
+      return { success: true }
+    } catch (e: any) {
+      return { success: false, error: e.message }
+    }
+  })
+
+  ipcMain.handle('toggle-tg-proxy', async (event, enable: boolean) => {
+    try {
+      if (enable) await tgProxyManager.start()
+      else await tgProxyManager.stop()
+      return { success: true }
+    } catch (e: any) {
+      return { success: false, error: e.message }
+    }
+  })
+
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
   })
   
-  win.webContents.openDevTools()
+  // win.webContents.openDevTools()
 
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
@@ -92,12 +119,14 @@ app.on('window-all-closed', () => {
 })
 
 app.on('will-quit', async (event) => {
+  event.preventDefault();
   if (xrayManager) {
-    event.preventDefault();
     await xrayManager.stop();
     await xrayManager.setSystemProxy(false);
-    app.exit(0);
   }
+  if (zapretManager) await zapretManager.stop();
+  if (tgProxyManager) await tgProxyManager.stop();
+  app.exit(0);
 })
 
 app.on('activate', () => {

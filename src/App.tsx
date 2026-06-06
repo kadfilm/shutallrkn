@@ -26,6 +26,26 @@ function App() {
   const [bypassDiscord, setBypassDiscord] = useState(false)
   const [bypassTelegram, setBypassTelegram] = useState(false)
 
+  const handleZapretToggle = async (type: 'youtube' | 'discord', currentState: boolean) => {
+    const newState = !currentState;
+    if (type === 'youtube') setBypassYoutube(newState);
+    if (type === 'discord') setBypassDiscord(newState);
+    
+    // If either Youtube OR Discord is active, we start Zapret
+    const shouldRunZapret = (type === 'youtube' ? newState : bypassYoutube) || 
+                            (type === 'discord' ? newState : bypassDiscord);
+    
+    // @ts-ignore
+    await window.ipcRenderer.invoke('toggle-zapret', shouldRunZapret);
+  };
+
+  const handleTgProxyToggle = async () => {
+    const newState = !bypassTelegram;
+    setBypassTelegram(newState);
+    // @ts-ignore
+    await window.ipcRenderer.invoke('toggle-tg-proxy', newState);
+  };
+
   useEffect(() => {
     const savedUrl = localStorage.getItem('subUrl')
     const savedServers = localStorage.getItem('servers')
@@ -182,7 +202,7 @@ function App() {
                   <span className="bypass-subtitle">Обход замедления (DPI)</span>
                 </div>
               </div>
-              <div className={`toggle-switch ${bypassYoutube ? 'active' : ''}`} onClick={() => setBypassYoutube(!bypassYoutube)}></div>
+              <div className={`toggle-switch ${bypassYoutube ? 'active' : ''}`} onClick={() => handleZapretToggle('youtube', bypassYoutube)}></div>
             </div>
 
             <div className={`bypass-card ${bypassDiscord ? 'active' : ''}`}>
@@ -193,7 +213,7 @@ function App() {
                   <span className="bypass-subtitle">Голос и чат (DPI)</span>
                 </div>
               </div>
-              <div className={`toggle-switch ${bypassDiscord ? 'active' : ''}`} onClick={() => setBypassDiscord(!bypassDiscord)}></div>
+              <div className={`toggle-switch ${bypassDiscord ? 'active' : ''}`} onClick={() => handleZapretToggle('discord', bypassDiscord)}></div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -205,7 +225,7 @@ function App() {
                     <span className="bypass-subtitle">Локальный прокси</span>
                   </div>
                 </div>
-                <div className={`toggle-switch ${bypassTelegram ? 'active' : ''}`} onClick={() => setBypassTelegram(!bypassTelegram)}></div>
+                <div className={`toggle-switch ${bypassTelegram ? 'active' : ''}`} onClick={handleTgProxyToggle}></div>
               </div>
               {bypassTelegram && (
                 <div style={{ backgroundColor: 'var(--glass-bg)', padding: '12px 16px', borderRadius: 8, border: '1px solid var(--accent-color)' }}>
