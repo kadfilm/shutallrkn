@@ -1,73 +1,54 @@
-# React + TypeScript + Vite
+# 🕊️ ShutAllRKN (Xray VPN Client)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Добро пожаловать в **ShutAllRKN** — кроссплатформенный VPN-клиент, созданный с огромной и поистине искренней "любовью" к главному цифровому надзорному ведомству. 
 
-Currently, two official plugins are available:
+Мы живем в удивительное время. Ежедневно строгие, но невероятно заботливые садоводы нашего цифрового спокойствия возводят новые заборы, усердно оберегая нас от внешнего мира. Благодаря их неустанной опеке, мы просто вынуждены постоянно развиваться. Каждая новая преграда — это лишь дружеский вызов, заставляющий нас прикручивать всё новые и новые элегантные костыли, проявлять чудеса инженерной смекалки и всё глубже изучать сетевые протоколы. Без их трогательного внимания к нашему трафику этот проект, объединяющий современные технологии маскировки и удобный интерфейс, никогда бы не появился на свет. Спасибо вам за то, что не даете нам скучать и держите нас в тонусе! ❤️
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Особенности
 
-## React Compiler
+- 🌍 **Кроссплатформенность:** Работает на Windows и macOS (включая старые версии, такие как Monterey).
+- 🔗 **Поддержка современных протоколов:** VLESS, VMess, Trojan (включая Reality / XTLS / Vision).
+- 📦 **Умный импорт:** Понимает не только классические ссылки `vless://`, но и умеет на лету разбирать сложные кастомные JSON-массивы подписок (полная совместимость с Hiddify, GoVPN и хитрыми провайдерами вроде *easy-api.live*).
+- 🎨 **Стильный UI:** Приятная темная тема, минимализм и ничего лишнего.
+- ⚙️ **Автоматический системный прокси:** Приложение само настраивает системный прокси при подключении и аккуратно убирает за собой при отключении.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠 Под капотом (Использованные технологии)
 
-## Expanding the ESLint configuration
+Этот проект является публичным и не смог бы существовать без титанического труда разработчиков открытого ПО. Мы с глубоким уважением отмечаем проекты, чьи решения легли в основу нашего клиента:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* **[Xray-core (Project XTLS)](https://github.com/XTLS/Xray-core)** — сердце и пламенный мотор приложения. Мощнейшее сетевое ядро, которое и занимается всей магией маршрутизации и обхода заботливых блокировок. (Бинарные файлы ядра распространяются по лицензии Mozilla Public License Version 2.0).
+* **[Electron](https://www.electronjs.org/)** — фреймворк, позволивший завернуть всё это в нативное десктопное приложение для разных ОС.
+* **[React](https://reactjs.org/) + [Vite](https://vitejs.dev/)** — база для нашего молниеносного и реактивного пользовательского интерфейса.
+* **[vite-plugin-electron](https://github.com/electron-vite/vite-plugin-electron)** — прекрасный инструмент для бесшовной интеграции Vite и процессов Electron.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🚀 Как запустить для разработки
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Клонирование репозитория
+```bash
+git clone https://github.com/kadfilm/shutallrkn.git
+cd shutallrkn
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 2. Установка зависимостей
+```bash
+npm install
 ```
+
+### 3. Запуск в режиме разработчика
+```bash
+npm run dev
+```
+
+### 4. Сборка бинарников (Билд)
+Для Windows:
+```bash
+npm run build
+```
+Для macOS (рекомендуется запускать сборку непосредственно на macOS):
+```bash
+npm run build
+```
+
+---
+
+*Создано для тех, кто хочет свободно дышать в сети. Используйте во благо.*
