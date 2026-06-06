@@ -1,9 +1,24 @@
 {
   "name": "vpn-client",
+  "productName": "ShutAllRKN",
+  "description": "Cross-platform VPN and DPI bypass client",
+  "author": "Alexander",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "main": "dist-electron/main.js",
+  "build": {
+    "appId": "com.shutallrkn.app",
+    "win": {
+      "requestedExecutionLevel": "requireAdministrator",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && electron-builder",
