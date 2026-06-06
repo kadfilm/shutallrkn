@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPowerOff, faSync, faServer, faNetworkWired } from '@fortawesome/free-solid-svg-icons'
+import { faYoutube, faDiscord, faTelegram } from '@fortawesome/free-brands-svg-icons'
 import './index.css'
 
 interface ServerNode {
@@ -18,14 +21,17 @@ function App() {
   const [isConnected, setIsConnected] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // Module states (Placeholders for Stage 2)
+  const [bypassYoutube, setBypassYoutube] = useState(false)
+  const [bypassDiscord, setBypassDiscord] = useState(false)
+  const [bypassTelegram, setBypassTelegram] = useState(false)
+
   useEffect(() => {
     const savedUrl = localStorage.getItem('subUrl')
     const savedServers = localStorage.getItem('servers')
     const savedActiveId = localStorage.getItem('activeServerId')
 
-    if (savedUrl) {
-      setSubUrl(savedUrl)
-    }
+    if (savedUrl) setSubUrl(savedUrl)
     if (savedServers) setServers(JSON.parse(savedServers))
     if (savedActiveId) setActiveServerId(savedActiveId)
   }, [])
@@ -42,13 +48,11 @@ function App() {
         alert('Ошибка: ' + nodes.error)
       } else {
         if (target.startsWith('vless://') || target.startsWith('vmess://')) {
-          // Append single node
           const newServers = [...servers, ...nodes];
           setServers(newServers)
           localStorage.setItem('servers', JSON.stringify(newServers))
           setInputValue('') 
         } else {
-          // Replace all nodes for subscription
           setServers(nodes)
           setSubUrl(target)
           localStorage.setItem('subUrl', target)
@@ -94,12 +98,12 @@ function App() {
 
   return (
     <>
-      <div className="titlebar">Xray VPN</div>
+      <div className="titlebar">ShutAllRKN - Cyan Edition</div>
       <div className="app-container">
         
         {/* Sidebar */}
         <div className="sidebar">
-          <h3>Серверы</h3>
+          <h3><FontAwesomeIcon icon={faServer} style={{ marginRight: 8 }} /> Серверы (VPN)</h3>
           
           <div className="input-group" style={{ marginTop: '16px' }}>
             <input 
@@ -120,10 +124,7 @@ function App() {
                 <div className="sub-url">{subUrl}</div>
               </div>
               <button className="icon-btn" onClick={() => handleImport(subUrl)} disabled={loading} title="Обновить подписку">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
-                  <path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-                  <path d="M21 3v5h-5" />
-                </svg>
+                <FontAwesomeIcon icon={faSync} />
               </button>
             </div>
           )}
@@ -144,6 +145,11 @@ function App() {
             ))}
             {servers.length === 0 && <div className="helper-text">Нет серверов. Добавьте ссылку.</div>}
           </div>
+          
+          {/* Diagnostics Link (Placeholder) */}
+          <button className="btn-secondary" style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <FontAwesomeIcon icon={faNetworkWired} /> Диагностика сети
+          </button>
         </div>
 
         {/* Main Content */}
@@ -152,16 +158,55 @@ function App() {
             className={`connect-ring ${isConnected ? 'connected' : ''}`}
             onClick={toggleConnection}
           >
-            <svg className="power-icon" viewBox="0 0 24 24">
-              <path d="M12 2v10m-5.657-3.657a8 8 0 1 0 11.314 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
+            <FontAwesomeIcon icon={faPowerOff} className="power-icon" style={{ width: 64, height: 64 }} />
           </div>
 
           <div className="status-text">
-            {isConnected ? 'Подключено' : 'Отключено'}
+            {isConnected ? 'VPN Активен' : 'VPN Отключен'}
           </div>
           <div className="status-subtext">
-            {activeServer ? activeServer.name : 'Выберите сервер'}
+            {activeServer ? activeServer.name : 'Выберите сервер слева'}
+          </div>
+
+          {/* Point-bypass Section */}
+          <div className="bypass-section">
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 1 }}>
+              Точечный обход (без VPN)
+            </div>
+            
+            <div className={`bypass-card ${bypassYoutube ? 'active' : ''}`}>
+              <div className="bypass-info">
+                <FontAwesomeIcon icon={faYoutube} className="bypass-icon" />
+                <div className="bypass-text-wrapper">
+                  <span className="bypass-title">Ускорение YouTube</span>
+                  <span className="bypass-subtitle">Обход замедления (DPI)</span>
+                </div>
+              </div>
+              <div className={`toggle-switch ${bypassYoutube ? 'active' : ''}`} onClick={() => setBypassYoutube(!bypassYoutube)}></div>
+            </div>
+
+            <div className={`bypass-card ${bypassDiscord ? 'active' : ''}`}>
+              <div className="bypass-info">
+                <FontAwesomeIcon icon={faDiscord} className="bypass-icon" />
+                <div className="bypass-text-wrapper">
+                  <span className="bypass-title">Разблокировка Discord</span>
+                  <span className="bypass-subtitle">Голос и чат (DPI)</span>
+                </div>
+              </div>
+              <div className={`toggle-switch ${bypassDiscord ? 'active' : ''}`} onClick={() => setBypassDiscord(!bypassDiscord)}></div>
+            </div>
+
+            <div className={`bypass-card ${bypassTelegram ? 'active' : ''}`}>
+              <div className="bypass-info">
+                <FontAwesomeIcon icon={faTelegram} className="bypass-icon" />
+                <div className="bypass-text-wrapper">
+                  <span className="bypass-title">Анти-блок Telegram</span>
+                  <span className="bypass-subtitle">Локальный прокси</span>
+                </div>
+              </div>
+              <div className={`toggle-switch ${bypassTelegram ? 'active' : ''}`} onClick={() => setBypassTelegram(!bypassTelegram)}></div>
+            </div>
+
           </div>
         </div>
 
