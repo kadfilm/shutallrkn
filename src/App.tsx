@@ -20,6 +20,7 @@ function App() {
   const [activeServerId, setActiveServerId] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [tunStatus, setTunStatus] = useState<{status: string, message: string}>({status: 'off', message: ''})
 
   // Module states (Placeholders for Stage 2)
   const [bypassYoutube, setBypassYoutube] = useState(false)
@@ -73,6 +74,11 @@ function App() {
     // @ts-ignore
     window.ipcRenderer.on('zapret-test-progress', (event, data) => {
       setTestProgress(data)
+    })
+
+    // @ts-ignore
+    window.ipcRenderer.on('tun-status', (event, info) => {
+      setTunStatus(info)
     })
   }, [])
 
@@ -253,6 +259,38 @@ function App() {
           <div className="status-subtext">
             {activeServer ? activeServer.name : 'Выберите сервер слева'}
           </div>
+
+          {isConnected && tunStatus.status !== 'off' && (
+            <div style={{
+              marginTop: 8,
+              padding: '6px 14px',
+              borderRadius: 8,
+              fontSize: 11,
+              fontWeight: 500,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: tunStatus.status === 'active' ? 'rgba(0, 200, 83, 0.15)'
+                : tunStatus.status === 'starting' ? 'rgba(255, 193, 7, 0.15)'
+                : tunStatus.status === 'error' ? 'rgba(244, 67, 54, 0.15)'
+                : 'rgba(255, 255, 255, 0.08)',
+              color: tunStatus.status === 'active' ? '#00c853'
+                : tunStatus.status === 'starting' ? '#ffc107'
+                : tunStatus.status === 'error' ? '#f44336'
+                : 'var(--text-muted)',
+              border: `1px solid ${tunStatus.status === 'active' ? 'rgba(0, 200, 83, 0.3)'
+                : tunStatus.status === 'starting' ? 'rgba(255, 193, 7, 0.3)'
+                : tunStatus.status === 'error' ? 'rgba(244, 67, 54, 0.3)'
+                : 'var(--border-color)'}`,
+            }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                backgroundColor: 'currentColor',
+                animation: tunStatus.status === 'starting' ? 'pulse 1s infinite' : 'none',
+              }} />
+              {tunStatus.message}
+            </div>
+          )}
 
           {/* Point-bypass Section */}
           <div className="bypass-section">

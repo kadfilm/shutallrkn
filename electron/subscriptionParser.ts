@@ -13,7 +13,33 @@ export interface ServerNode {
   flow?: string;
   alpn?: string;
   fingerprint?: string;
-  rawConfig?: any; // Added for Hiddify/easy-api raw JSON configs
+  rawConfig?: any;
+}
+
+/**
+ * Resolve a domain via Cloudflare DNS-over-HTTPS.
+ * Bypasses ISP DNS poisoning that returns fake IPs like 198.18.x.x.
+ */
+async function resolveViaDoH(hostname: string): Promise<string | null> {
+  try {
+    const dohUrl = `https://1.1.1.1/dns-query?name=${encodeURIComponent(hostname)}&type=A`;
+    const resp = await fetch(dohUrl, {
+      headers: { 'Accept': 'application/dns-json' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json() as any;
+    const answers = data.Answer?.filter((a: any) => a.type === 1); // A records
+    if (answers && answers.length > 0) {
+      // Skip poisoned IPs (198.18.x.x range)
+      const realIp = answers.find((a: any) => !a.data.startsWith('198.18.'));
+      return realIp?.data || answers[0].data;
+    }
+    return null;
+  } catch (err) {
+    console.error('[DoH] Resolution failed:', err);
+    return null;
+  }
 }
 
 export async function fetchSubscription(url: string): Promise<ServerNode[]> {
@@ -26,15 +52,41 @@ export async function fetchSubscription(url: string): Promise<ServerNode[]> {
       return nodes;
     }
 
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'happ',
-        'X-HWID': '1234567890' // Bypass easy-api.live protection
+    // Try direct fetch first, fall back to DoH-resolved IP if blocked
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: {
+          'User-Agent': 'happ',
+          'X-HWID': '1234567890'
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+    } catch (directErr) {
+      console.warn('[Sub] Direct fetch failed, trying via DoH bypass...', directErr);
+      // ISP is likely DNS-poisoning the domain. Resolve real IP via Cloudflare DoH.
+      const parsedUrl = new URL(url);
+      const realIp = await resolveViaDoH(parsedUrl.hostname);
+      if (!realIp) {
+        throw new Error('Домен заблокирован и не удалось определить реальный IP через DoH');
       }
-    });
-    
+      console.log(`[Sub] DoH resolved ${parsedUrl.hostname} → ${realIp}`);
+      // Fetch using IP with Host header
+      const bypassUrl = url.replace(parsedUrl.hostname, realIp);
+      response = await fetch(bypassUrl, {
+        headers: {
+          'User-Agent': 'happ',
+          'X-HWID': '1234567890',
+          'Host': parsedUrl.hostname,
+        },
+        // @ts-ignore — Node fetch supports this
+        rejectUnauthorized: false,
+        signal: AbortSignal.timeout(15000),
+      });
+    }
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch subscription: ${response.statusText}`);
+      throw new Error(`Ошибка загрузки подписки: ${response.status} ${response.statusText}`);
     }
     const text = await response.text();
     

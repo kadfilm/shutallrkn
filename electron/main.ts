@@ -31,6 +31,11 @@ function createWindow() {
   tgProxyManager = new TgProxyManager(process.env.APP_ROOT)
   tunManager = new TunManager(process.env.APP_ROOT)
 
+  // Forward TUN status changes to renderer
+  tunManager.setStatusCallback((info) => {
+    win?.webContents.send('tun-status', info)
+  })
+
   win = new BrowserWindow({
     width: 900,
     height: 600,
@@ -89,12 +94,28 @@ function createWindow() {
   ipcMain.handle('connect-vpn', async (event, node: ServerNode) => {
     try {
       await xrayManager.start(node)
-      // Use TUN mode for full traffic capture (all apps, not just proxy-aware ones)
+      // Collect ALL server IPs from config to route them around TUN
+      const serverIps: string[] = []
+      if (node.address) serverIps.push(node.address)
+      // Extract IPs from rawConfig outbounds (subscription configs may have multiple servers)
+      if (node.rawConfig?.outbounds) {
+        for (const ob of node.rawConfig.outbounds) {
+          const vnext = ob.settings?.vnext || []
+          for (const v of vnext) {
+            if (v.address && !serverIps.includes(v.address)) serverIps.push(v.address)
+          }
+          const servers = ob.settings?.servers || []
+          for (const s of servers) {
+            if (s.address && !serverIps.includes(s.address)) serverIps.push(s.address)
+          }
+        }
+      }
+      console.log('[Main] VPN server IPs to bypass TUN:', serverIps)
+      // Use TUN mode for full traffic capture
       try {
-        await tunManager.start(node.address, 10808)
+        await tunManager.start(serverIps, 10808)
       } catch (tunErr: any) {
         console.warn('[Main] TUN mode failed, falling back to system proxy:', tunErr.message)
-        // Fallback: set system proxy if TUN fails (e.g. user denied admin rights)
         await xrayManager.setSystemProxy(true, 10809)
       }
       return { success: true }
