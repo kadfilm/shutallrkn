@@ -11,7 +11,8 @@
     "appId": "com.shutallrkn.app",
     "win": {
       "requestedExecutionLevel": "requireAdministrator",
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "public/favicon.svg"
     },
     "nsis": {
       "oneClick": false,
