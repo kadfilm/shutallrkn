@@ -105,11 +105,23 @@ function createWindow() {
   })
 
   // Zapret / Telegram IPC
-  ipcMain.handle('toggle-zapret', async (event, enable: boolean) => {
+  ipcMain.handle('toggle-zapret', async (event, enable: boolean, strategyIndex: number = 0) => {
     try {
-      if (enable) await zapretManager.startDiscordYoutube()
+      if (enable) await zapretManager.startDiscordYoutube(strategyIndex)
       else await zapretManager.stop()
       return { success: true }
+    } catch (e: any) {
+      return { success: false, error: e.message }
+    }
+  })
+
+  ipcMain.handle('test-zapret-strategies', async (event) => {
+    try {
+      const workingIndex = await zapretManager.findWorkingStrategy((msg, percent) => {
+        // Send progress updates back to renderer
+        win?.webContents.send('zapret-test-progress', { msg, percent })
+      })
+      return { success: true, workingIndex }
     } catch (e: any) {
       return { success: false, error: e.message }
     }

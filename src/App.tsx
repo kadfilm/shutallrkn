@@ -26,6 +26,10 @@ function App() {
   const [bypassDiscord, setBypassDiscord] = useState(false)
   const [bypassTelegram, setBypassTelegram] = useState(false)
   const [autoStart, setAutoStart] = useState(false)
+  
+  const [zapretStrategyIndex, setZapretStrategyIndex] = useState(0)
+  const [isTestingStrategies, setIsTestingStrategies] = useState(false)
+  const [testProgress, setTestProgress] = useState({ msg: '', percent: 0 })
 
   const handleZapretToggle = async (type: 'youtube' | 'discord', currentState: boolean) => {
     const newState = !currentState;
@@ -37,7 +41,7 @@ function App() {
                             (type === 'discord' ? newState : bypassDiscord);
     
     // @ts-ignore
-    await window.ipcRenderer.invoke('toggle-zapret', shouldRunZapret);
+    await window.ipcRenderer.invoke('toggle-zapret', shouldRunZapret, zapretStrategyIndex);
   };
 
   const handleTgProxyToggle = async () => {
@@ -52,17 +56,51 @@ function App() {
     const savedServers = localStorage.getItem('servers')
     const savedActiveId = localStorage.getItem('activeServerId')
     const savedAutoStart = localStorage.getItem('autoStart')
+    const savedZapretStrategy = localStorage.getItem('zapretStrategyIndex')
 
     if (savedUrl) setSubUrl(savedUrl)
     if (savedServers) setServers(JSON.parse(savedServers))
     if (savedActiveId) setActiveServerId(savedActiveId)
+    if (savedZapretStrategy) setZapretStrategyIndex(parseInt(savedZapretStrategy))
+    
     if (savedAutoStart === 'true') {
       setAutoStart(true)
       // Restore OS setting on load just to be sure
       // @ts-ignore
       window.ipcRenderer.invoke('set-autostart', true).catch(console.error)
     }
+
+    // @ts-ignore
+    window.ipcRenderer.on('zapret-test-progress', (event, data) => {
+      setTestProgress(data)
+    })
   }, [])
+
+  const startBlockcheck = async () => {
+    setIsTestingStrategies(true)
+    setTestProgress({ msg: 'Начинаем проверку...', percent: 0 })
+    try {
+      // @ts-ignore
+      const res = await window.ipcRenderer.invoke('test-zapret-strategies')
+      if (res.success) {
+        setZapretStrategyIndex(res.workingIndex)
+        localStorage.setItem('zapretStrategyIndex', res.workingIndex.toString())
+        alert('Рабочий метод обхода успешно найден и сохранен!')
+        // Restart Zapret if it was already running
+        if (bypassYoutube || bypassDiscord) {
+          // @ts-ignore
+          await window.ipcRenderer.invoke('toggle-zapret', true, res.workingIndex)
+        }
+      } else {
+        alert('Ошибка при подборе: ' + res.error)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsTestingStrategies(false)
+      setTestProgress({ msg: '', percent: 0 })
+    }
+  }
 
   const toggleAutoStart = async () => {
     const newState = !autoStart
@@ -218,9 +256,31 @@ function App() {
 
           {/* Point-bypass Section */}
           <div className="bypass-section">
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 1 }}>
-              Точечный обход (без VPN)
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                Точечный обход (без VPN)
+              </div>
+              <button 
+                className="btn-secondary" 
+                onClick={startBlockcheck} 
+                disabled={isTestingStrategies}
+                style={{ fontSize: 11, padding: '4px 8px', backgroundColor: 'transparent', border: '1px solid var(--accent-color)', color: 'var(--accent-color)' }}
+              >
+                {isTestingStrategies ? 'Тестирование...' : 'Подобрать обход'}
+              </button>
             </div>
+
+            {isTestingStrategies && (
+              <div style={{ backgroundColor: 'var(--glass-bg)', padding: '12px', borderRadius: 8, marginBottom: 8, border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+                  <span>{testProgress.msg}</span>
+                  <span>{testProgress.percent}%</span>
+                </div>
+                <div style={{ width: '100%', height: 4, backgroundColor: '#222', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ width: `${testProgress.percent}%`, height: '100%', backgroundColor: 'var(--accent-color)', transition: 'width 0.3s ease' }}></div>
+                </div>
+              </div>
+            )}
             
             <div className={`bypass-card ${bypassYoutube ? 'active' : ''}`}>
               <div className="bypass-info">
