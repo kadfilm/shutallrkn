@@ -1,0 +1,278 @@
+:root {
+  --bg-color: #0d0d0d;
+  --panel-bg: #1a1a1a;
+  --text-color: #ffffff;
+  --text-muted: #888888;
+  --accent-color: #00ff88;
+  --danger-color: #ff3366;
+  --border-color: #333333;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Custom Titlebar for Electron */
+.titlebar {
+  height: 32px;
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background-color: var(--panel-bg);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.app-container {
+  display: flex;
+  height: calc(100vh - 32px);
+}
+
+.sidebar {
+  width: 280px;
+  background-color: var(--panel-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+h1, h2, h3 {
+  font-weight: 600;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  -webkit-app-region: no-drag;
+}
+
+input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: #222;
+  color: white;
+  font-family: inherit;
+  margin-bottom: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-app-region: no-drag;
+}
+
+input:focus {
+  border-color: var(--accent-color);
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: #000;
+  padding: 12px 24px;
+  font-size: 14px;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: #333;
+  color: white;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.btn-secondary:hover {
+  background-color: #444;
+}
+
+/* Server List */
+.server-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Hide scrollbar */
+.server-list::-webkit-scrollbar {
+  width: 6px;
+}
+.server-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.server-item {
+  background-color: #222;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.server-item:hover {
+  border-color: #555;
+}
+
+.server-item.active {
+  border-color: var(--accent-color);
+  background-color: rgba(0, 255, 136, 0.05);
+}
+
+.server-name {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.server-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Big Connect Button */
+.connect-ring {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #2a2a2a 0%, var(--bg-color) 100%);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 0 30px rgba(0,0,0,0.5);
+  margin-bottom: 32px;
+  -webkit-app-region: no-drag;
+}
+
+.connect-ring:hover {
+  transform: scale(1.05);
+}
+
+.connect-ring.connected {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 40px rgba(0, 255, 136, 0.2), inset 0 0 20px rgba(0, 255, 136, 0.1);
+}
+
+.power-icon {
+  width: 64px;
+  height: 64px;
+  fill: var(--text-muted);
+  transition: fill 0.4s;
+}
+
+.connect-ring.connected .power-icon {
+  fill: var(--accent-color);
+}
+
+.status-text {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.status-subtext {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group input {
+  margin-bottom: 0;
+}
+
+.subscription-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #222;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+.sub-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sub-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 2px;
+}
+
+.sub-url {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon-btn {
+  background: none;
+  color: var(--text-muted);
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background-color: #333;
+  color: var(--text-color);
+}
+
+.helper-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 24px;
+}
