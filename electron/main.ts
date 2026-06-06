@@ -31,7 +31,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 900,
     height: 600,
-    icon: path.join(process.env.VITE_PUBLIC, 'icon.png'),
+    icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       nodeIntegration: false,
@@ -45,7 +45,7 @@ function createWindow() {
   })
 
   // Set up Tray
-  const iconPath = path.join(process.env.VITE_PUBLIC, 'icon.png')
+  const iconPath = path.join(process.env.VITE_PUBLIC, 'logo.png')
   tray = new Tray(iconPath)
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Открыть ShutAllRKN', click: () => win?.show() },

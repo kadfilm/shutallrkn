@@ -12,7 +12,7 @@
     "win": {
       "requestedExecutionLevel": "requireAdministrator",
       "target": "nsis",
-      "icon": "public/icon.png"
+      "icon": "public/logo.png"
     },
     "nsis": {
       "oneClick": false,
