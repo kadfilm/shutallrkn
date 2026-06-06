@@ -25,6 +25,7 @@ function App() {
   const [bypassYoutube, setBypassYoutube] = useState(false)
   const [bypassDiscord, setBypassDiscord] = useState(false)
   const [bypassTelegram, setBypassTelegram] = useState(false)
+  const [autoStart, setAutoStart] = useState(false)
 
   const handleZapretToggle = async (type: 'youtube' | 'discord', currentState: boolean) => {
     const newState = !currentState;
@@ -50,11 +51,26 @@ function App() {
     const savedUrl = localStorage.getItem('subUrl')
     const savedServers = localStorage.getItem('servers')
     const savedActiveId = localStorage.getItem('activeServerId')
+    const savedAutoStart = localStorage.getItem('autoStart')
 
     if (savedUrl) setSubUrl(savedUrl)
     if (savedServers) setServers(JSON.parse(savedServers))
     if (savedActiveId) setActiveServerId(savedActiveId)
+    if (savedAutoStart === 'true') {
+      setAutoStart(true)
+      // Restore OS setting on load just to be sure
+      // @ts-ignore
+      window.ipcRenderer.invoke('set-autostart', true).catch(console.error)
+    }
   }, [])
+
+  const toggleAutoStart = async () => {
+    const newState = !autoStart
+    setAutoStart(newState)
+    localStorage.setItem('autoStart', String(newState))
+    // @ts-ignore
+    await window.ipcRenderer.invoke('set-autostart', newState)
+  }
 
   const handleImport = async (urlToFetch?: string) => {
     const target = urlToFetch || inputValue;
@@ -170,6 +186,18 @@ function App() {
           <button className="btn-secondary" style={{ marginTop: 16, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <FontAwesomeIcon icon={faNetworkWired} /> Диагностика сети
           </button>
+
+          <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+            <div className="bypass-card" style={{ padding: '12px' }}>
+              <div className="bypass-info" style={{ gap: 12 }}>
+                <div className="bypass-text-wrapper">
+                  <span className="bypass-title" style={{ fontSize: 13 }}>Автозапуск</span>
+                  <span className="bypass-subtitle" style={{ fontSize: 10 }}>Старт вместе с Windows</span>
+                </div>
+              </div>
+              <div className={`toggle-switch ${autoStart ? 'active' : ''}`} style={{ transform: 'scale(0.8)', margin: 0 }} onClick={toggleAutoStart}></div>
+            </div>
+          </div>
         </div>
 
         {/* Main Content */}

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -18,6 +18,7 @@ import { TgProxyManager } from './tgProxyManager'
 import { fetchSubscription, generateXrayConfig, ServerNode } from './subscriptionParser'
 
 let win: BrowserWindow | null
+let tray: Tray | null = null
 let xrayManager: XrayManager
 let zapretManager: ZapretManager
 let tgProxyManager: TgProxyManager
@@ -40,6 +41,33 @@ function createWindow() {
     titleBarOverlay: {
       color: '#0B1120',
       symbolColor: '#F8FAFC'
+    }
+  })
+
+  // Set up Tray
+  const iconPath = path.join(process.env.VITE_PUBLIC, 'vite.svg')
+  tray = new Tray(iconPath)
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Открыть ShutAllRKN', click: () => win?.show() },
+    { type: 'separator' },
+    { label: 'Выход', click: () => {
+      app.quit()
+    }}
+  ])
+  tray.setToolTip('ShutAllRKN')
+  tray.setContextMenu(contextMenu)
+  
+  tray.on('click', () => {
+    if (win) {
+      if (win.isVisible()) win.hide()
+      else win.show()
+    }
+  })
+
+  win.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault()
+      win?.hide()
     }
   })
 
@@ -97,6 +125,15 @@ function createWindow() {
     }
   })
 
+  // Autostart IPC
+  ipcMain.handle('set-autostart', (event, enable: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: enable,
+      path: app.getPath('exe')
+    })
+    return { success: true }
+  })
+
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
@@ -112,10 +149,7 @@ function createWindow() {
 }
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-    win = null
-  }
+  // We do not quit when the window is closed, it stays in the tray
 })
 
 app.on('will-quit', async (event) => {
@@ -132,7 +166,15 @@ app.on('will-quit', async (event) => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
+  } else if (win) {
+    win.show()
   }
 })
+
+// Custom flag to allow quitting from the tray
+let isQuitting = false;
+app.on('before-quit', () => {
+  isQuitting = true;
+});
 
 app.whenReady().then(createWindow)
