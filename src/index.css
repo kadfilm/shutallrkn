@@ -57,8 +57,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 32px;
+  overflow-y: auto;
 }
 
 h1, h2, h3 {
@@ -169,8 +170,8 @@ input:focus {
 
 /* Big Connect Button */
 .connect-ring {
-  width: 200px;
-  height: 200px;
+  width: 160px;
+  height: 160px;
   flex-shrink: 0;
   border-radius: 50%;
   display: flex;
@@ -181,7 +182,7 @@ input:focus {
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-shadow: 0 0 30px rgba(0,0,0,0.5);
-  margin-bottom: 32px;
+  margin-bottom: 16px;
   -webkit-app-region: no-drag;
 }
 
@@ -287,7 +288,8 @@ input:focus {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 32px;
+  margin-top: 16px;
+  margin-bottom: 24px;
 }
 
 .bypass-card {
