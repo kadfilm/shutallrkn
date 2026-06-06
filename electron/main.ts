@@ -15,6 +15,7 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 import { XrayManager } from './xrayManager'
 import { ZapretManager } from './zapretManager'
 import { TgProxyManager } from './tgProxyManager'
+import { TunManager } from './tunManager'
 import { fetchSubscription, ServerNode } from './subscriptionParser'
 
 let win: BrowserWindow | null
@@ -22,11 +23,13 @@ let tray: Tray | null = null
 let xrayManager: XrayManager
 let zapretManager: ZapretManager
 let tgProxyManager: TgProxyManager
+let tunManager: TunManager
 
 function createWindow() {
   xrayManager = new XrayManager(process.env.APP_ROOT)
   zapretManager = new ZapretManager(process.env.APP_ROOT)
   tgProxyManager = new TgProxyManager(process.env.APP_ROOT)
+  tunManager = new TunManager(process.env.APP_ROOT)
 
   win = new BrowserWindow({
     width: 900,
@@ -86,7 +89,14 @@ function createWindow() {
   ipcMain.handle('connect-vpn', async (event, node: ServerNode) => {
     try {
       await xrayManager.start(node)
-      await xrayManager.setSystemProxy(true, 10809)
+      // Use TUN mode for full traffic capture (all apps, not just proxy-aware ones)
+      try {
+        await tunManager.start(node.address, 10808)
+      } catch (tunErr: any) {
+        console.warn('[Main] TUN mode failed, falling back to system proxy:', tunErr.message)
+        // Fallback: set system proxy if TUN fails (e.g. user denied admin rights)
+        await xrayManager.setSystemProxy(true, 10809)
+      }
       return { success: true }
     } catch (e: any) {
       console.error(e)
@@ -96,8 +106,13 @@ function createWindow() {
 
   ipcMain.handle('disconnect-vpn', async () => {
     try {
+      // Stop TUN first (restores routes), then stop Xray
+      if (tunManager.active) {
+        await tunManager.stop()
+      } else {
+        await xrayManager.setSystemProxy(false)
+      }
       await xrayManager.stop()
-      await xrayManager.setSystemProxy(false)
       return { success: true }
     } catch (e: any) {
       console.error(e)
@@ -167,6 +182,10 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', async (event) => {
   event.preventDefault();
+  // Stop TUN first to restore network before killing Xray
+  if (tunManager?.active) {
+    try { await tunManager.stop(); } catch {}
+  }
   if (xrayManager) {
     await xrayManager.stop();
     await xrayManager.setSystemProxy(false);
