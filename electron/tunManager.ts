@@ -165,6 +165,7 @@ export class TunManager {
     // Build DNS setup commands
     const services = await this.getActiveNetworkServices()
     const dnsLines = services.map(svc => `networksetup -setdnsservers "${svc}" 1.1.1.1 8.8.8.8`).join('\n')
+    const ipv6DisableLines = services.map(svc => `networksetup -setv6off "${svc}" 2>/dev/null || true`).join('\n')
 
     this.setStatus('starting', 'Запрос прав администратора...')
 
@@ -203,6 +204,9 @@ route add -net 128.0.0.0/1 ${this.tunGateway}
 
 # Set DNS
 ${dnsLines}
+
+# Disable IPv6 (leaks real location — bypasses TUN which only handles IPv4)
+${ipv6DisableLines}
 
 # Flush DNS cache
 dscacheutil -flushcache
@@ -265,6 +269,8 @@ echo "OK:$TUN_PID"
       return `networksetup -setdnsservers "${svc}" empty`
     }).join('\n')
 
+    const ipv6RestoreLines = services.map(svc => `networksetup -setv6automatic "${svc}" 2>/dev/null || true`).join('\n')
+
     const stopScript = `#!/bin/bash
 # Remove routes
 route delete -net 0.0.0.0/1 ${this.tunGateway} 2>/dev/null || true
@@ -276,6 +282,9 @@ pkill -f tun2socks-darwin-amd64 2>/dev/null || true
 
 # Restore DNS
 ${dnsRestoreLines}
+
+# Restore IPv6
+${ipv6RestoreLines}
 
 # Flush DNS
 dscacheutil -flushcache
