@@ -44,9 +44,11 @@ function createWindow() {
     }
   })
 
-  // Set up Tray
-  const iconPath = path.join(process.env.VITE_PUBLIC, 'logo.png')
-  tray = new Tray(iconPath)
+  // Set up Tray — use a small icon for macOS menu bar (16x16)
+  const trayIconPath = path.join(process.env.VITE_PUBLIC, 'tray-icon.png')
+  let trayImage = nativeImage.createFromPath(trayIconPath)
+  trayImage = trayImage.resize({ width: 16, height: 16 })
+  tray = new Tray(trayImage)
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Открыть ShutAllRKN', click: () => win?.show() },
     { type: 'separator' },
