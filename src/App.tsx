@@ -98,7 +98,7 @@ function App() {
 
   return (
     <>
-      <div className="titlebar">ShutAllRKN - Cyan Edition</div>
+      <div className="titlebar">ShutAllRKN</div>
       <div className="app-container">
         
         {/* Sidebar */}
@@ -178,7 +178,7 @@ function App() {
               <div className="bypass-info">
                 <FontAwesomeIcon icon={faYoutube} className="bypass-icon" />
                 <div className="bypass-text-wrapper">
-                  <span className="bypass-title">Ускорение YouTube</span>
+                  <span className="bypass-title">Разблокировка YouTube</span>
                   <span className="bypass-subtitle">Обход замедления (DPI)</span>
                 </div>
               </div>
@@ -196,15 +196,31 @@ function App() {
               <div className={`toggle-switch ${bypassDiscord ? 'active' : ''}`} onClick={() => setBypassDiscord(!bypassDiscord)}></div>
             </div>
 
-            <div className={`bypass-card ${bypassTelegram ? 'active' : ''}`}>
-              <div className="bypass-info">
-                <FontAwesomeIcon icon={faTelegram} className="bypass-icon" />
-                <div className="bypass-text-wrapper">
-                  <span className="bypass-title">Анти-блок Telegram</span>
-                  <span className="bypass-subtitle">Локальный прокси</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className={`bypass-card ${bypassTelegram ? 'active' : ''}`}>
+                <div className="bypass-info">
+                  <FontAwesomeIcon icon={faTelegram} className="bypass-icon" />
+                  <div className="bypass-text-wrapper">
+                    <span className="bypass-title">Proxy Telegram</span>
+                    <span className="bypass-subtitle">Локальный прокси</span>
+                  </div>
                 </div>
+                <div className={`toggle-switch ${bypassTelegram ? 'active' : ''}`} onClick={() => setBypassTelegram(!bypassTelegram)}></div>
               </div>
-              <div className={`toggle-switch ${bypassTelegram ? 'active' : ''}`} onClick={() => setBypassTelegram(!bypassTelegram)}></div>
+              {bypassTelegram && (
+                <div style={{ backgroundColor: 'var(--glass-bg)', padding: '12px 16px', borderRadius: 8, border: '1px solid var(--accent-color)' }}>
+                  <div style={{ fontSize: 13, marginBottom: 12 }}>
+                    <strong>Инструкция:</strong> Включите прокси выше, затем нажмите кнопку ниже. Telegram откроется сам и предложит применить настройки.
+                  </div>
+                  <a 
+                    href="tg://socks?server=127.0.0.1&port=1080" 
+                    className="btn-primary" 
+                    style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
+                  >
+                    Применить в Telegram
+                  </a>
+                </div>
+              )}
             </div>
 
           </div>
