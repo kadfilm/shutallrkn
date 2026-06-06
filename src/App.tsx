@@ -230,7 +230,7 @@ function App() {
               <div className="bypass-info" style={{ gap: 12 }}>
                 <div className="bypass-text-wrapper">
                   <span className="bypass-title" style={{ fontSize: 13 }}>Автозапуск</span>
-                  <span className="bypass-subtitle" style={{ fontSize: 10 }}>Старт вместе с Windows</span>
+                  <span className="bypass-subtitle" style={{ fontSize: 10 }}>Запуск при старте системы</span>
                 </div>
               </div>
               <div className={`toggle-switch ${autoStart ? 'active' : ''}`} style={{ transform: 'scale(0.8)', margin: 0 }} onClick={toggleAutoStart}></div>

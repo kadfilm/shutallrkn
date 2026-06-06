@@ -26,3 +26,4 @@ dist-electron
 release
 *.jsonl
 temp.json
+config.json

@@ -16,7 +16,6 @@ export class XrayManager {
   constructor(appRoot: string) {
     this.appRoot = appRoot
     const platform = os.platform()
-    const arch = os.arch()
     
     // We expect the binaries to be in resources/bin
     if (platform === 'win32') {
@@ -57,27 +56,83 @@ export class XrayManager {
     const configPath = path.join(this.appRoot, 'config.json')
     await fs.writeFile(configPath, JSON.stringify(configObj, null, 2))
 
+    console.log('[Xray] Generated config:', JSON.stringify(configObj, null, 2))
+
     // Make sure the binary is executable on macOS
     if (os.platform() === 'darwin') {
       await execAsync(`chmod +x "${this.binPath}"`)
     }
 
-    this.process = spawn(this.binPath, ['run', '-c', configPath], {
-      windowsHide: true,
-      stdio: ['ignore', 'pipe', 'pipe']
-    })
+    // Verify binary exists
+    try {
+      await fs.access(this.binPath)
+    } catch {
+      throw new Error(`Xray binary not found at: ${this.binPath}`)
+    }
 
-    this.process.stdout?.on('data', (data) => {
-      console.log(`[Xray] ${data.toString()}`)
-    })
+    return new Promise<void>((resolve, reject) => {
+      this.process = spawn(this.binPath, ['run', '-c', configPath], {
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe']
+      })
 
-    this.process.stderr?.on('data', (data) => {
-      console.error(`[Xray Error] ${data.toString()}`)
-    })
+      let settled = false
+      
+      // Timeout: if Xray doesn't produce output in 5 seconds, assume it started OK
+      const timeout = setTimeout(() => {
+        if (!settled) {
+          settled = true
+          console.log('[Xray] Startup timeout reached, assuming started OK')
+          resolve()
+        }
+      }, 5000)
 
-    this.process.on('close', (code) => {
-      console.log(`[Xray] process exited with code ${code}`)
-      this.process = null
+      this.process.stdout?.on('data', (data) => {
+        const msg = data.toString()
+        console.log(`[Xray] ${msg}`)
+        // Xray logs "Xray started" or similar when it's ready
+        if (!settled && (msg.includes('started') || msg.includes('listening'))) {
+          settled = true
+          clearTimeout(timeout)
+          resolve()
+        }
+      })
+
+      this.process.stderr?.on('data', (data) => {
+        const msg = data.toString()
+        console.error(`[Xray Error] ${msg}`)
+        if (!settled) {
+          // Don't reject on warnings, only on fatal errors
+          if (msg.toLowerCase().includes('fatal') || msg.toLowerCase().includes('failed to start')) {
+            settled = true
+            clearTimeout(timeout)
+            reject(new Error(`Xray failed to start: ${msg}`))
+          }
+        }
+      })
+
+      this.process.on('close', (code) => {
+        console.log(`[Xray] process exited with code ${code}`)
+        if (!settled) {
+          settled = true
+          clearTimeout(timeout)
+          if (code !== 0 && code !== null) {
+            reject(new Error(`Xray process exited with code ${code}`))
+          } else {
+            resolve()
+          }
+        }
+        this.process = null
+      })
+
+      this.process.on('error', (err) => {
+        console.error(`[Xray] Failed to spawn process:`, err)
+        if (!settled) {
+          settled = true
+          clearTimeout(timeout)
+          reject(new Error(`Failed to start Xray: ${err.message}`))
+        }
+      })
     })
   }
 
@@ -94,6 +149,38 @@ export class XrayManager {
     })
   }
 
+  /**
+   * Get all active network services on macOS.
+   * Falls back to ['Wi-Fi'] if detection fails.
+   */
+  private async getActiveNetworkServices(): Promise<string[]> {
+    try {
+      const { stdout } = await execAsync('networksetup -listallnetworkservices')
+      const allServices = stdout.split('\n')
+        .filter(line => line.trim() && !line.startsWith('*') && !line.startsWith('An asterisk'))
+      
+      const active: string[] = []
+      for (const svc of allServices) {
+        try {
+          const { stdout: info } = await execAsync(`networksetup -getinfo "${svc}"`)
+          // Check if this interface has a real IP (not "none")
+          const ipMatch = info.match(/^IP address:\s*(.+)/m)
+          if (ipMatch && ipMatch[1].trim() !== 'none') {
+            active.push(svc)
+          }
+        } catch {
+          // Skip services that error out
+        }
+      }
+      
+      console.log(`[Proxy] Detected active network services: ${active.join(', ')}`)
+      return active.length > 0 ? active : ['Wi-Fi']
+    } catch (err) {
+      console.error('[Proxy] Failed to detect network services, falling back to Wi-Fi', err)
+      return ['Wi-Fi']
+    }
+  }
+
   async setSystemProxy(enable: boolean, port: number = 10809) {
     const platform = os.platform()
     
@@ -106,16 +193,25 @@ export class XrayManager {
           await execAsync(`reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f`)
         }
       } else if (platform === 'darwin') {
-        // macOS proxy settings (assuming Wi-Fi for now, ideally iterate over all active network services)
-        const networkservice = "Wi-Fi" 
-        if (enable) {
-          await execAsync(`networksetup -setwebproxy "${networkservice}" 127.0.0.1 ${port}`)
-          await execAsync(`networksetup -setsecurewebproxy "${networkservice}" 127.0.0.1 ${port}`)
-          await execAsync(`networksetup -setsocksfirewallproxy "${networkservice}" 127.0.0.1 10808`)
-        } else {
-          await execAsync(`networksetup -setwebproxystate "${networkservice}" off`)
-          await execAsync(`networksetup -setsecurewebproxystate "${networkservice}" off`)
-          await execAsync(`networksetup -setsocksfirewallproxystate "${networkservice}" off`)
+        // Auto-detect all active network services instead of hardcoding "Wi-Fi"
+        const services = await this.getActiveNetworkServices()
+        
+        for (const networkservice of services) {
+          try {
+            if (enable) {
+              await execAsync(`networksetup -setwebproxy "${networkservice}" 127.0.0.1 ${port}`)
+              await execAsync(`networksetup -setsecurewebproxy "${networkservice}" 127.0.0.1 ${port}`)
+              await execAsync(`networksetup -setsocksfirewallproxy "${networkservice}" 127.0.0.1 10808`)
+              console.log(`[Proxy] Enabled proxy on "${networkservice}"`)
+            } else {
+              await execAsync(`networksetup -setwebproxystate "${networkservice}" off`)
+              await execAsync(`networksetup -setsecurewebproxystate "${networkservice}" off`)
+              await execAsync(`networksetup -setsocksfirewallproxystate "${networkservice}" off`)
+              console.log(`[Proxy] Disabled proxy on "${networkservice}"`)
+            }
+          } catch (err) {
+            console.error(`[Proxy] Failed to set proxy on "${networkservice}"`, err)
+          }
         }
       }
     } catch (err) {

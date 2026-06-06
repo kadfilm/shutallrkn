@@ -15,7 +15,7 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 import { XrayManager } from './xrayManager'
 import { ZapretManager } from './zapretManager'
 import { TgProxyManager } from './tgProxyManager'
-import { fetchSubscription, generateXrayConfig, ServerNode } from './subscriptionParser'
+import { fetchSubscription, ServerNode } from './subscriptionParser'
 
 let win: BrowserWindow | null
 let tray: Tray | null = null
@@ -83,8 +83,7 @@ function createWindow() {
 
   ipcMain.handle('connect-vpn', async (event, node: ServerNode) => {
     try {
-      const config = generateXrayConfig(node)
-      await xrayManager.start(config)
+      await xrayManager.start(node)
       await xrayManager.setSystemProxy(true, 10809)
       return { success: true }
     } catch (e: any) {
