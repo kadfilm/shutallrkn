@@ -385,3 +385,38 @@ input:focus {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
+
+/* Panic Button */
+.panic-button {
+  margin-top: 20px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  border: 2px solid rgba(239, 68, 68, 0.5);
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+  letter-spacing: 0.5px;
+}
+
+.panic-button:hover {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+  transform: scale(1.03);
+}
+
+.panic-button:active {
+  transform: scale(0.97);
+}
+
+.panic-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}

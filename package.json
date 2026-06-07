@@ -3,15 +3,37 @@
   "productName": "ShutAllRKN",
   "description": "Cross-platform VPN and DPI bypass client",
   "author": "Alexander",
+  "repository": "github:kadfilm/shutallrkn",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "main": "dist-electron/main.js",
   "build": {
     "appId": "com.shutallrkn.app",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/bin/mac",
+        "to": "bin/mac",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "resources/bin/win",
+        "to": "bin/win",
+        "filter": ["**/*"]
+      }
+    ],
     "win": {
       "requestedExecutionLevel": "requireAdministrator",
       "target": "nsis",
+      "icon": "public/logo.png"
+    },
+    "mac": {
+      "target": ["zip"],
       "icon": "public/logo.png"
     },
     "nsis": {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPowerOff, faSync, faServer, faNetworkWired } from '@fortawesome/free-solid-svg-icons'
+import { faPowerOff, faSync, faServer, faNetworkWired, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 import { faYoutube, faDiscord, faTelegram } from '@fortawesome/free-brands-svg-icons'
 import './index.css'
 
@@ -150,6 +150,37 @@ function App() {
     }
   }
 
+  const [panicLoading, setPanicLoading] = useState(false)
+  const [panicResult, setPanicResult] = useState<string | null>(null)
+
+  const handlePanicReset = async () => {
+    if (!confirm('⚠️ ЭКСТРЕННЫЙ СБРОС СЕТИ\n\nЭто действие:\n• Убьёт все VPN-процессы\n• Удалит все маршруты TUN\n• Восстановит DNS\n• Включит IPv6\n• Отключит системный прокси\n\nПродолжить?')) return
+
+    setPanicLoading(true)
+    setPanicResult(null)
+    try {
+      // @ts-ignore
+      const res = await window.ipcRenderer.invoke('panic-reset')
+      if (res.success) {
+        setIsConnected(false)
+        setTunStatus({ status: 'off', message: '' })
+        setBypassYoutube(false)
+        setBypassDiscord(false)
+        setBypassTelegram(false)
+        setPanicResult('✅ Сеть восстановлена!\n' + (res.results || []).join('\n'))
+        setTimeout(() => setPanicResult(null), 8000)
+      } else {
+        setPanicResult('❌ ' + (res.error || 'Неизвестная ошибка'))
+        setTimeout(() => setPanicResult(null), 5000)
+      }
+    } catch (e: any) {
+      setPanicResult('❌ ' + e.message)
+      setTimeout(() => setPanicResult(null), 5000)
+    } finally {
+      setPanicLoading(false)
+    }
+  }
+
   const toggleConnection = async () => {
     if (!activeServerId) {
       alert('Сначала выберите сервер')
@@ -289,6 +320,34 @@ function App() {
                 animation: tunStatus.status === 'starting' ? 'pulse 1s infinite' : 'none',
               }} />
               {tunStatus.message}
+            </div>
+          )}
+
+          {/* Panic Button */}
+          <button
+            className="panic-button"
+            onClick={handlePanicReset}
+            disabled={panicLoading}
+          >
+            <FontAwesomeIcon icon={faExclamationTriangle} />
+            {panicLoading ? 'Восстановление...' : 'Экстренный сброс сети'}
+          </button>
+
+          {panicResult && (
+            <div style={{
+              marginTop: 8,
+              padding: '10px 14px',
+              borderRadius: 8,
+              fontSize: 11,
+              fontFamily: 'monospace',
+              whiteSpace: 'pre-wrap',
+              backgroundColor: panicResult.startsWith('✅') ? 'rgba(0, 200, 83, 0.1)' : 'rgba(244, 67, 54, 0.1)',
+              color: panicResult.startsWith('✅') ? '#00c853' : '#f44336',
+              border: `1px solid ${panicResult.startsWith('✅') ? 'rgba(0, 200, 83, 0.3)' : 'rgba(244, 67, 54, 0.3)'}`,
+              maxHeight: 120,
+              overflowY: 'auto',
+            }}>
+              {panicResult}
             </div>
           )}
 

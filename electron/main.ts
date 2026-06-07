@@ -1,6 +1,10 @@
 import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { exec } from 'node:child_process'
+import { promisify } from 'node:util'
+
+const execAsync = promisify(exec)
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -26,10 +30,10 @@ let tgProxyManager: TgProxyManager
 let tunManager: TunManager
 
 function createWindow() {
-  xrayManager = new XrayManager(process.env.APP_ROOT)
-  zapretManager = new ZapretManager(process.env.APP_ROOT)
-  tgProxyManager = new TgProxyManager(process.env.APP_ROOT)
-  tunManager = new TunManager(process.env.APP_ROOT)
+  xrayManager = new XrayManager()
+  zapretManager = new ZapretManager()
+  tgProxyManager = new TgProxyManager()
+  tunManager = new TunManager()
 
   // Forward TUN status changes to renderer
   tunManager.setStatusCallback((info) => {
@@ -181,6 +185,99 @@ function createWindow() {
       path: app.getPath('exe')
     })
     return { success: true }
+  })
+
+  // PANIC BUTTON — stateless nuclear reset, works even if app state is lost
+  ipcMain.handle('panic-reset', async () => {
+    console.log('[PANIC] Emergency network reset triggered!')
+    const results: string[] = []
+
+    try {
+      // 1. Kill tun2socks
+      try {
+        await execAsync('pkill -f tun2socks 2>/dev/null || true')
+        results.push('✓ tun2socks killed')
+      } catch { results.push('~ tun2socks was not running') }
+
+      // 2. Kill xray
+      try {
+        await execAsync('pkill -f xray 2>/dev/null || true')
+        results.push('✓ xray killed')
+      } catch { results.push('~ xray was not running') }
+
+      // 3. Remove TUN routes (safe to run even if they don't exist)
+      try {
+        await execAsync(`osascript -e 'do shell script "route delete -net 0.0.0.0/1 198.18.0.1 2>/dev/null; route delete -net 128.0.0.0/1 198.18.0.1 2>/dev/null; true" with administrator privileges'`, { timeout: 30000 })
+        results.push('✓ TUN routes removed')
+      } catch (e: any) {
+        if (e.message?.includes('User canceled') || e.message?.includes('-128')) {
+          return { success: false, error: 'Пользователь отменил ввод пароля', results }
+        }
+        results.push('~ No TUN routes to remove')
+      }
+
+      // 4. Detect active network services and restore DNS + IPv6
+      const services = await (async () => {
+        try {
+          const { stdout } = await execAsync('networksetup -listallnetworkservices')
+          const all = stdout.split('\n').filter(l => l.trim() && !l.startsWith('*') && !l.startsWith('An asterisk'))
+          const active: string[] = []
+          for (const svc of all) {
+            try {
+              const { stdout: info } = await execAsync(`networksetup -getinfo "${svc}"`)
+              if (info.match(/^IP address:\s*(?!none).+/m)) active.push(svc)
+            } catch {}
+          }
+          return active.length > 0 ? active : ['Wi-Fi']
+        } catch { return ['Wi-Fi'] }
+      })()
+
+      // 5. Restore DNS to automatic (empty)
+      for (const svc of services) {
+        try {
+          await execAsync(`networksetup -setdnsservers "${svc}" empty`)
+          results.push(`✓ DNS restored on ${svc}`)
+        } catch { results.push(`~ DNS restore failed on ${svc}`) }
+      }
+
+      // 6. Restore IPv6
+      for (const svc of services) {
+        try {
+          await execAsync(`networksetup -setv6automatic "${svc}" 2>/dev/null || true`)
+          results.push(`✓ IPv6 restored on ${svc}`)
+        } catch { results.push(`~ IPv6 restore failed on ${svc}`) }
+      }
+
+      // 7. Disable system proxy
+      for (const svc of services) {
+        try {
+          await execAsync(`networksetup -setsocksfirewallproxystate "${svc}" off 2>/dev/null || true`)
+          await execAsync(`networksetup -setwebproxystate "${svc}" off 2>/dev/null || true`)
+          await execAsync(`networksetup -setsecurewebproxystate "${svc}" off 2>/dev/null || true`)
+          results.push(`✓ Proxy disabled on ${svc}`)
+        } catch { results.push(`~ Proxy disable failed on ${svc}`) }
+      }
+
+      // 8. Flush DNS cache
+      try {
+        await execAsync('dscacheutil -flushcache; killall -HUP mDNSResponder 2>/dev/null || true')
+        results.push('✓ DNS cache flushed')
+      } catch {}
+
+      // 9. Reset internal state
+      if (tunManager) {
+        try { tunManager['_status'] = 'off'; tunManager['_statusMessage'] = ''; } catch {}
+      }
+      if (xrayManager) {
+        try { xrayManager['process']?.kill(); xrayManager['process'] = null; } catch {}
+      }
+
+      console.log('[PANIC] Reset complete:', results.join(', '))
+      return { success: true, results }
+    } catch (e: any) {
+      console.error('[PANIC] Error:', e)
+      return { success: false, error: e.message, results }
+    }
   })
 
   // Test active push message to Renderer-process.

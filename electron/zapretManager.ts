@@ -2,6 +2,7 @@ import { spawn, ChildProcess } from 'node:child_process'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs/promises'
+import { getBinDir } from './paths'
 
 // Pre-defined set of top Zapret strategies
 const ZAPRET_STRATEGIES = [
@@ -47,21 +48,21 @@ const ZAPRET_STRATEGIES = [
 export class ZapretManager {
   private process: ChildProcess | null = null
   private binPath: string
-  private appRoot: string
+  private binDir: string
 
-  constructor(appRoot: string) {
-    this.appRoot = appRoot
+  constructor() {
     const platform = os.platform()
+    this.binDir = getBinDir('win')
     if (platform === 'win32') {
-      this.binPath = path.join(appRoot, 'resources', 'bin', 'win', 'zapret', 'bin', 'winws.exe')
+      this.binPath = path.join(this.binDir, 'zapret', 'bin', 'winws.exe')
     } else {
       this.binPath = ''
     }
   }
 
   private getInterpolatedArgs(strategyArgs: string[]): string[] {
-    const tlsBin = path.join(this.appRoot, 'resources', 'bin', 'win', 'zapret', 'bin', 'tls_clienthello_www_google_com.bin')
-    const discordList = path.join(this.appRoot, 'resources', 'bin', 'win', 'zapret', 'lists', 'discord.txt')
+    const tlsBin = path.join(this.binDir, 'zapret', 'bin', 'tls_clienthello_www_google_com.bin')
+    const discordList = path.join(this.binDir, 'zapret', 'lists', 'discord.txt')
 
     return strategyArgs.map(arg => 
       arg.replace('{tlsBin}', tlsBin).replace('{discordList}', discordList)

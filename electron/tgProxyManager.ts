@@ -1,15 +1,16 @@
 import { spawn, ChildProcess } from 'node:child_process'
 import path from 'node:path'
 import os from 'node:os'
+import { getBinDir } from './paths'
 
 export class TgProxyManager {
   private process: ChildProcess | null = null
   private binPath: string
 
-  constructor(appRoot: string) {
+  constructor() {
     const platform = os.platform()
     if (platform === 'win32') {
-      this.binPath = path.join(appRoot, 'resources', 'bin', 'win', 'TgWsProxy_windows.exe')
+      this.binPath = path.join(getBinDir('win'), 'TgWsProxy_windows.exe')
     } else {
       this.binPath = '' // For Mac/Linux we skip or add later
     }

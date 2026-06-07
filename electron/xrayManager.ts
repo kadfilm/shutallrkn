@@ -5,23 +5,24 @@ import os from 'node:os'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import { generateXrayConfig, ServerNode } from './subscriptionParser'
+import { getBinDir, getWritableDir } from './paths'
 
 const execAsync = promisify(exec)
 
 export class XrayManager {
   private process: ChildProcess | null = null
   private binPath: string
-  private appRoot: string
+  private writableDir: string
 
-  constructor(appRoot: string) {
-    this.appRoot = appRoot
+  constructor() {
+    this.writableDir = getWritableDir()
     const platform = os.platform()
+    const binDir = getBinDir(platform === 'win32' ? 'win' : 'mac')
     
-    // We expect the binaries to be in resources/bin
     if (platform === 'win32') {
-      this.binPath = path.join(appRoot, 'resources', 'bin', 'win', 'xray.exe')
+      this.binPath = path.join(binDir, 'xray.exe')
     } else if (platform === 'darwin') {
-      this.binPath = path.join(appRoot, 'resources', 'bin', 'mac', 'xray')
+      this.binPath = path.join(binDir, 'xray')
     } else {
       throw new Error(`Unsupported platform: ${platform}`)
     }
@@ -53,7 +54,7 @@ export class XrayManager {
       configObj = generateXrayConfig(node, 10808, 10809);
     }
 
-    const configPath = path.join(this.appRoot, 'config.json')
+    const configPath = path.join(this.writableDir, 'config.json')
     await fs.writeFile(configPath, JSON.stringify(configObj, null, 2))
 
     console.log('[Xray] Generated config:', JSON.stringify(configObj, null, 2))

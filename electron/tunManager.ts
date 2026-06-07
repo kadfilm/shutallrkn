@@ -3,6 +3,7 @@ import os from 'node:os'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import fs from 'node:fs/promises'
+import { getBinDir } from './paths'
 
 const execAsync = promisify(exec)
 
@@ -19,7 +20,6 @@ export interface TunStatusInfo {
  */
 export class TunManager {
   private binPath: string
-  private appRoot: string
   private originalGateway: string = ''
   private originalDns: Map<string, string[]> = new Map()
   private vpnServerIps: string[] = []
@@ -29,10 +29,9 @@ export class TunManager {
   private _statusMessage: string = ''
   private onStatusChange?: (info: TunStatusInfo) => void
 
-  constructor(appRoot: string) {
-    this.appRoot = appRoot
+  constructor() {
     if (os.platform() === 'darwin') {
-      this.binPath = path.join(appRoot, 'resources', 'bin', 'mac', 'tun2socks-darwin-amd64')
+      this.binPath = path.join(getBinDir('mac'), 'tun2socks-darwin-amd64')
     } else {
       this.binPath = ''
     }
@@ -59,7 +58,7 @@ export class TunManager {
    * This avoids all quoting nightmares with inline osascript commands.
    */
   private async runScriptAsAdmin(scriptContent: string): Promise<string> {
-    const scriptPath = path.join(this.appRoot, '.tun-script.sh')
+    const scriptPath = '/tmp/shutallrkn-tun.sh'
     await fs.writeFile(scriptPath, scriptContent, { mode: 0o755 })
 
     try {
