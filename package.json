@@ -5,7 +5,7 @@
   "author": "Alexander",
   "repository": "github:kadfilm/shutallrkn",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "main": "dist-electron/main.js",
   "build": {
