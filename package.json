@@ -5,7 +5,7 @@
   "author": "Alexander",
   "repository": "github:kadfilm/shutallrkn",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "main": "dist-electron/main.js",
   "build": {
@@ -30,7 +30,7 @@
     "win": {
       "requestedExecutionLevel": "requireAdministrator",
       "target": "nsis",
-      "icon": "public/logo.png"
+      "icon": "public/logo.ico"
     },
     "mac": {
       "target": ["zip"],
