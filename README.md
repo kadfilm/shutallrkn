@@ -22,13 +22,13 @@
 
 ## Выбирайте сами свой вариант
 
-### - ShutAll Routing Key Nodes
-### - ShutAll Remote Kernel Network
-### - ShutAll Random Key Nonce
-### - ShutAll Reliable Key Negotiation
-## - И мои любимые
-### - ShutAll Residential Kitchen Network
-### - ShutAll Rural Knitting Node
+- ShutAll Routing Key Nodes
+- ShutAll Remote Kernel Network
+- ShutAll Random Key Nonce
+- ShutAll Reliable Key Negotiation
+## И мои любимые
+- ShutAll Residential Kitchen Network
+- ShutAll Rural Knitting Node
 
 Единственный и неповторимый надзорный орган тут абсолютно непричем , просто совпадение.
 
